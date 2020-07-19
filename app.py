@@ -2,6 +2,11 @@ from flask import Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import Column, Integer, String, Float
 import os
+from flask_marshmallow import Marshmallow
+
+from pprint import pprint
+import pdb
+
 
 app = Flask(__name__)
 # Since SQLite is a file DB, need to specify where the file should reside.
@@ -11,7 +16,7 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'planets.db')
 
 db = SQLAlchemy(app)
-
+ma = Marshmallow(app)
 
 @app.cli.command('db_create')
 def db_create():
@@ -114,8 +119,17 @@ def planets():
     # below function is from SQLAlchemy
     planets_list = Planet.query.all()
     # WSGI sends TypeError: Object of type Planet is not JSON serializable
-    return jsonify(data=planets_list)
+    #return jsonify(data=planets_list)
+    
+    # serialize using Marshmallow
+    result = planets_schema.dump(planets_list)
+    # serialize to a JSON-encoded string using dumps.
+    #result = planets_schema.dumps(planets_list)
+    #pprint(dir(result))
+    #pdb.set_trace()
+    return jsonify(result)
 
+    
 #DB models
 # two tables: users, planets
 # ORM takes python objects/class and converts to SQL queries.
@@ -139,6 +153,30 @@ class Planet(db.Model):
     mass = Column(Float)
     radius = Column(Float)
     distance = Column(Float)
+
+
+# Marshmallow config - create classes
+# tells Marshmallow the fields it should look for
+# create an inner class also called Meta
+class UserSchema(ma.Schema):
+    class Meta:
+        fields = ('id', 'first_name', 'last_name', 'email', 'password')
+
+
+class PlanetSchema(ma.Schema):
+    class Meta:
+        fields = ('planet_id', 'planet_name', 'planet_type', 'home_star', 'mass', 'radius', 'distance')
+
+
+# instantiate the schema
+# two different copies/versions of the schema
+user_schema = UserSchema()
+# if you are expecting mutliple records back, use many=True
+users_schema = UserSchema(many=True)
+
+planet_schema = PlanetSchema()
+planets_schema = PlanetSchema(many=True)
+
 
 
 if __name__ == "__main__":
