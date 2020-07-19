@@ -25,6 +25,7 @@ def db_drop():
     print('Database dropped!')
 
 # adding some test data to the DB to start with
+# make it into a CMD by adding decorator
 @app.cli.command('db_seed')
 def db_seed():
     mercury = Planet(planet_name='Mercury',
@@ -104,6 +105,16 @@ def url_variables(name: str, age: int):
         return jsonify(message= "Sorry " + name + " - you are not old enough."), 401
     else:
         return jsonify(message= "Welcome " + name + ", you are not old enough.")
+
+
+# add a new endpoint - planets - accept only GET req
+@app.route('/planets', methods=['GET'])
+def planets():
+
+    # below function is from SQLAlchemy
+    planets_list = Planet.query.all()
+    # WSGI sends TypeError: Object of type Planet is not JSON serializable
+    return jsonify(data=planets_list)
 
 #DB models
 # two tables: users, planets
